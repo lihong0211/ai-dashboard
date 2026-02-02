@@ -1,0 +1,1 @@
+{"root":["./src/app.tsx","./src/main.tsx","./src/vite-env.d.ts","./src/components/deepseekchat.tsx","./src/layouts/mainlayout.tsx","./src/pages/dashboard.tsx","./src/pages/experiencecenter.tsx","./src/pages/models.tsx","./src/pages/workbench.tsx","./src/service/api.ts","./src/service/request.ts","./src/utils/streamchat.ts"],"version":"5.6.3"}
