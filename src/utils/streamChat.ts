@@ -64,7 +64,6 @@ export async function streamRequest(
         if (line.startsWith('data: ')) {
           const raw = line.slice(6)
           if (raw === '[DONE]') {
-            onChunk?.({ done: true })
             continue
           }
           try {

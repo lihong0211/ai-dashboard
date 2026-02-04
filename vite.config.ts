@@ -5,8 +5,12 @@ export default defineConfig({
   plugins: [react()],
   server: {
     proxy: {
+      // '/ai': {
+      //   target: 'https://home.doctor-dog.com',
+      //   changeOrigin: true,
+      // },
       '/ai': {
-        target: 'https://home.doctor-dog.com',
+        target: 'http://localhost:3000',
         changeOrigin: true,
       },
     },

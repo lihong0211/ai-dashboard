@@ -4,6 +4,7 @@ import DashboardPage from './pages/Dashboard'
 import ModelsPage from './pages/Models'
 import WorkbenchPage from './pages/Workbench'
 import ExperienceCenterPage from './pages/ExperienceCenter'
+import PortalPage from './pages/Portal'
 
 function App() {
   return (
@@ -22,6 +23,7 @@ function App() {
             <Route path="mobile" element={<ExperienceCenterPage tab="mobile" />} />
           </Route>
           <Route path="workbench" element={<WorkbenchPage />} />
+          <Route path="portal" element={<PortalPage />} />
         </Route>
       </Routes>
     </BrowserRouter>

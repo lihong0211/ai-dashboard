@@ -1,31 +1,17 @@
 import { useState } from 'react'
-import { Outlet, useNavigate, useLocation, Link } from 'react-router-dom'
-import {
-  Layout,
-  Menu,
-  Button,
-  Space,
-  Typography,
-  FloatButton,
-} from 'antd'
+import { Layout, Menu, Button, Typography } from 'antd'
+import { Link, useNavigate, useLocation, Outlet } from 'react-router-dom'
 import {
   MenuFoldOutlined,
   MenuUnfoldOutlined,
-  ThunderboltOutlined,
-  FileTextOutlined,
-  SoundOutlined,
-  EyeOutlined,
-  AppstoreOutlined,
   DashboardOutlined,
-  RobotOutlined,
-  CloudOutlined,
-  SettingOutlined,
-  CustomerServiceOutlined,
   ExperimentOutlined,
+  CodeOutlined,
+  GlobalOutlined,
+  RobotOutlined,
   FontSizeOutlined,
+  SoundOutlined,
   PlayCircleOutlined,
-  DesktopOutlined,
-  MobileOutlined,
 } from '@ant-design/icons'
 
 const { Header, Sider, Content } = Layout
@@ -33,16 +19,15 @@ const { Text } = Typography
 
 const mainMenuItems = [
   {
-    key: 'group-experience',
+    key: 'group-main',
     type: 'group' as const,
-    label: '模型体验',
+    label: '',
     children: [
-      { key: '/dashboard', icon: <ThunderboltOutlined />, label: '模型广场' },
-      { key: '/experience', icon: <ExperimentOutlined />, label: '体验中心' },
-      { key: '/models', icon: <FileTextOutlined />, label: '文本模型' },
-      { key: 'voice', icon: <SoundOutlined />, label: '语音模型' },
-      { key: 'vision', icon: <EyeOutlined />, label: '视觉模型' },
-      { key: 'multimodal', icon: <AppstoreOutlined />, label: '全模态模型' },
+      { key: '/dashboard', icon: <DashboardOutlined />, label: '模型广场' },
+      { key: '/models', icon: <ExperimentOutlined />, label: '模型管理' },
+      { key: '/workbench', icon: <CodeOutlined />, label: '工作台' },
+      { key: '/experience/llm', icon: <FontSizeOutlined />, label: '体验中心' },
+      { key: '/portal', icon: <GlobalOutlined />, label: '门户' },
     ],
   },
   {
@@ -51,37 +36,17 @@ const mainMenuItems = [
     label: '模型训练',
     children: [{ key: 'finetune', icon: <RobotOutlined />, label: '微调训练' }],
   },
-  {
-    key: 'group-work',
-    type: 'group' as const,
-    label: '工作台',
-    children: [{ key: '/workbench', icon: <DashboardOutlined />, label: '工作台' }],
-  },
-  {
-    key: 'group-monitor',
-    type: 'group' as const,
-    label: '模型监控',
-    children: [{ key: 'monitor', icon: <CloudOutlined />, label: '监控中心' }],
-  },
-  {
-    key: 'group-settings',
-    type: 'group' as const,
-    label: '权限管理',
-    children: [{ key: 'permission', icon: <SettingOutlined />, label: '权限设置' }],
-  },
 ]
 
 const experienceMenuItems = [
   {
     key: 'group-experience-tabs',
     type: 'group' as const,
-    label: '体验中心',
+    label: '',
     children: [
       { key: '/experience/llm', icon: <FontSizeOutlined />, label: '大模型体验' },
       { key: '/experience/voice', icon: <SoundOutlined />, label: '语音合成' },
       { key: '/experience/video', icon: <PlayCircleOutlined />, label: '视频生成' },
-      { key: '/experience/computer', icon: <DesktopOutlined />, label: 'Computer Use' },
-      { key: '/experience/mobile', icon: <MobileOutlined />, label: 'Mobile Use' },
     ],
   },
 ]
@@ -92,6 +57,7 @@ export default function MainLayout() {
   const location = useLocation()
 
   const isExperience = location.pathname.startsWith('/experience')
+  const isPortal = location.pathname === '/portal'
   const menuItems = isExperience ? experienceMenuItems : mainMenuItems
 
   const flatMenuKeys = menuItems.flatMap((group) =>
@@ -100,7 +66,9 @@ export default function MainLayout() {
       .map((item) => (item as { key: string }).key)
   )
 
-  const selectedKey = flatMenuKeys.find((key) => location.pathname.startsWith(key)) || (isExperience ? '/experience/llm' : '/dashboard')
+  const selectedKey =
+    flatMenuKeys.find((key) => location.pathname.startsWith(key)) ||
+    (isExperience ? '/experience/llm' : '/dashboard')
 
   const handleMenuClick = ({ key }: { key: string }) => {
     if (key.startsWith('/')) {
@@ -108,86 +76,101 @@ export default function MainLayout() {
     }
   }
 
+  const navLinks = [
+    { to: '/dashboard', label: '模型广场' },
+    { to: '/models', label: '模型管理' },
+    { to: '/workbench', label: '工作台' },
+    { to: '/experience/llm', label: '体验中心' },
+    { to: '/portal', label: 'AI 门户' },
+  ]
+
   return (
     <Layout style={{ minHeight: '100vh' }}>
       <Layout>
-        <Sider
-          trigger={null}
-          collapsible
-          collapsed={collapsed}
-          width={220}
-          style={{ background: '#fff' }}
-        >
-          <div
-            style={{
-              height: 56,
-              display: 'flex',
-              alignItems: 'center',
-              paddingLeft: 16,
-              borderBottom: '1px solid #f0f0f0',
-            }}
+        {!isPortal && (
+          <Sider
+            trigger={null}
+            collapsible
+            collapsed={collapsed}
+            width={220}
+            style={{ background: '#f5f7fa' }}
           >
-            <Button
-              type="text"
-              icon={collapsed ? <MenuUnfoldOutlined /> : <MenuFoldOutlined />}
-              onClick={() => setCollapsed(!collapsed)}
-              style={{ fontSize: 18 }}
+            <div
+              style={{
+                height: 56,
+                display: 'flex',
+                alignItems: 'center',
+                paddingLeft: 16,
+                background: '#f5f7fa',
+              }}
+            >
+              <Button
+                type="text"
+                icon={collapsed ? <MenuUnfoldOutlined /> : <MenuFoldOutlined />}
+                onClick={() => setCollapsed(!collapsed)}
+                style={{ fontSize: 18 }}
+              />
+              {!collapsed && (
+                <Text strong style={{ marginLeft: 8 }}>
+                  AI 实验室
+                </Text>
+              )}
+            </div>
+            <Menu
+              mode="inline"
+              selectedKeys={[selectedKey]}
+              onClick={handleMenuClick}
+              style={{
+                height: 'calc(100vh - 56px)',
+                borderRight: 0,
+                paddingTop: 8,
+                background: '#f5f7fa',
+              }}
+              items={menuItems}
             />
-            {!collapsed && (
-              <Text strong style={{ marginLeft: 8 }}>
-                AI 实验室
-              </Text>
-            )}
-          </div>
-          <Menu
-            mode="inline"
-            selectedKeys={[selectedKey]}
-            onClick={handleMenuClick}
-            style={{ height: 'calc(100vh - 56px)', borderRight: 0, paddingTop: 8 }}
-            items={menuItems}
-          />
-        </Sider>
-
+          </Sider>
+        )}
         <Layout>
-          <Header
+          {!isPortal && (
+            <Header
+              style={{
+                padding: '0 24px',
+                background: '#fff',
+                display: 'flex',
+                alignItems: 'center',
+                gap: 24,
+              }}
+            >
+              {navLinks.map(({ to, label }) => (
+                <Link
+                  key={to}
+                  to={to}
+                  className="header-nav-link"
+                  style={{
+                    color: location.pathname.startsWith(to) ? 'var(--ds-primary)' : 'var(--ds-text)',
+                    padding: '6px 12px',
+                    borderRadius: 6,
+                    textDecoration: 'none',
+                  }}
+                >
+                  {label}
+                </Link>
+              ))}
+            </Header>
+          )}
+          <Content
             style={{
-              padding: '0 24px',
-              background: '#fff',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'space-between',
-              borderBottom: '1px solid #f0f0f0',
+              margin: isPortal ? 0 : 24,
+              padding: isPortal ? 0 : 24,
+              minHeight: 280,
+              background: isPortal ? '#000' : 'var(--ds-card)',
+              ...(isPortal && { height: 'calc(100vh - 64px)' }),
             }}
           >
-            <Space size="large">
-              <Link to="/experience/llm" style={{ color: location.pathname.startsWith('/experience') ? '#1677ff' : 'inherit' }}>
-                体验中心
-              </Link>
-              <Link to="#" style={{ color: 'inherit' }}>
-                文档
-              </Link>
-              <Link to="#" style={{ color: 'inherit' }}>
-                API 参考
-              </Link>
-            </Space>
-
-          </Header>
-
-          <Content style={{ margin: 24, background: '#f5f5f5', padding: 24, minHeight: 280, overflow: 'auto' }}>
             <Outlet />
           </Content>
         </Layout>
       </Layout>
-
-      {/* 右侧固定按钮 */}
-      <FloatButton.Group
-        shape="square"
-        style={{ right: 24, bottom: 100 }}
-        icon={<CustomerServiceOutlined />}
-      >
-        <FloatButton tooltip="在线咨询" />
-        <FloatButton tooltip="AI 助理" icon={<RobotOutlined />} />
-      </FloatButton.Group>
     </Layout>
   )
 }
