@@ -8,7 +8,7 @@ function App() {
     <BrowserRouter>
       <Routes>
         <Route path="/" element={<MainLayout />}>
-          <Route index element={<Navigate to="/dashboard" replace />} />
+          <Route index element={<Navigate to="/experience/llm" replace />} />
           <Route path="experience">
             <Route index element={<Navigate to="/experience/llm" replace />} />
             <Route path="llm" element={<ExperienceCenterPage tab="llm" />} />
