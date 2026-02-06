@@ -1,86 +1,86 @@
 import { useState, useRef, useEffect } from 'react'
 import ReactMarkdown from 'react-markdown'
-import { Layout, Typography, Input, Space, Tag, Button, Spin } from 'antd'
-import { SendOutlined } from '@ant-design/icons'
-import { chat, type ChatMessage } from '../service/api'
+import { Layout, Typography, Image, Spin } from 'antd'
+import { PictureOutlined } from '@ant-design/icons'
+import { ocr, type ChatMessage } from '../service/api'
 
 const { Content } = Layout
 const { Title } = Typography
-const { TextArea } = Input
 
-const MODEL_OPTIONS = [
-  { label: 'my-deepseek-r1-1.5', value: 'my-deepseek-r1-1.5' },
-  { label: 'deepseek-r1:latest', value: 'deepseek-r1:latest' },
-  { label: 'qwen3:1.7b', value: 'qwen3:1.7b' },
-]
+/** 前端展示用：带图片预览 URL */
+type DisplayMessage = ChatMessage & { imagePreview?: string }
 
-interface ChatProps {
-  onModelChange?: (model: string) => void
+/** 将 File 转为纯 base64 字符串（不含 data URL 前缀） */
+function fileToBase64(file: File): Promise<string> {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader()
+    reader.onload = () => {
+      const dataUrl = reader.result as string
+      const base64 = dataUrl.includes(',') ? dataUrl.split(',')[1] : dataUrl
+      resolve(base64 || '')
+    }
+    reader.onerror = () => reject(reader.error)
+    reader.readAsDataURL(file)
+  })
 }
 
-export default function Chat({ onModelChange }: ChatProps) {
-  const [message, setMessage] = useState('')
-  const [model, setModel] = useState('my-deepseek-r1-1.5')
-  const [messages, setMessages] = useState<ChatMessage[]>([])
+const DEFAULT_PROMPT = '请识别图中的文字'
+
+export default function OCR() {
+  const [messages, setMessages] = useState<DisplayMessage[]>([])
   const [thinking, setThinking] = useState('')
   const [streamingResponse, setStreamingResponse] = useState('')
   const [loading, setLoading] = useState(false)
-  const messagesRef = useRef<ChatMessage[]>([])
+  const fileInputRef = useRef<HTMLInputElement>(null)
   const streamedContentRef = useRef('')
   const doneHandledRef = useRef(false)
   const messagesEndRef = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
-    messagesRef.current = messages
-  }, [messages])
-
-  useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' })
   }, [messages, streamingResponse, thinking, loading])
 
-  const handleModelChange = (v: string) => {
-    setModel(v)
-    onModelChange?.(v)
-  }
-
-  const handleSend = async () => {
-    const prompt = message.trim()
-    if (!prompt || loading) return
-
-    setLoading(true)
-    setThinking('')
-    setStreamingResponse('')
-    setMessage('')
-    streamedContentRef.current = ''
-    doneHandledRef.current = false
-
-    const userMessage: ChatMessage = { role: 'user', content: prompt }
-    setMessages((prev) => [...prev, userMessage])
-
-    const history = messagesRef.current
-    await chat(prompt, {
-      model,
-      messages: history,
-      onChunk: ({ thinking: t, response: r, done }) => {
-        if (t) setThinking((prev) => prev + t)
-        if (r) {
-          streamedContentRef.current += r
-          setStreamingResponse(streamedContentRef.current)
-        }
-        if (done && !doneHandledRef.current) {
-          doneHandledRef.current = true
-          setMessages((prev) => [...prev, { role: 'assistant', content: streamedContentRef.current }])
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0]
+    if (!file || !file.type.startsWith('image/') || loading) return
+    e.target.value = ''
+    const preview = URL.createObjectURL(file)
+    fileToBase64(file).then((base64) => {
+      const userMessage: DisplayMessage = {
+        role: 'user',
+        content: DEFAULT_PROMPT,
+        images: [''],
+        imagePreview: preview,
+      }
+      setMessages((prev) => [...prev, userMessage])
+      setLoading(true)
+      setThinking('')
+      setStreamingResponse('')
+      streamedContentRef.current = ''
+      doneHandledRef.current = false
+      ocr({
+        images: [base64],
+        onChunk: ({ thinking: t, response: r, done }) => {
+          if (t) setThinking((prev) => prev + t)
+          if (r) {
+            streamedContentRef.current += r
+            setStreamingResponse(streamedContentRef.current)
+          }
+          if (done && !doneHandledRef.current) {
+            doneHandledRef.current = true
+            setMessages((prev) => [...prev, { role: 'assistant', content: streamedContentRef.current }])
+            setThinking('')
+            setStreamingResponse('')
+            setLoading(false)
+          }
+        },
+        onError: (err: Error) => {
+          setMessages((prev) => [...prev, { role: 'assistant', content: `错误: ${err.message}` }])
           setThinking('')
           setStreamingResponse('')
           setLoading(false)
-        }
-      },
-      onError: (err: Error) => {
-        setMessages((prev) => [...prev, { role: 'assistant', content: `错误: ${err.message}` }])
-        setThinking('')
-        setStreamingResponse('')
-        setLoading(false)
-      },
+        },
+      })
     })
   }
 
@@ -105,20 +105,11 @@ export default function Chat({ onModelChange }: ChatProps) {
         }}
       >
         <Title level={5} style={{ margin: 0, color: 'var(--ds-text)', fontWeight: 600 }}>
-          语言模型
+          OCR
         </Title>
-        <Space align="center" wrap size={[8, 8]}>
-          {MODEL_OPTIONS.map((opt) => (
-            <Tag
-              key={opt.value}
-              color={model === opt.value ? 'blue' : 'default'}
-              style={{ cursor: 'pointer', margin: 0 }}
-              onClick={() => handleModelChange(opt.value)}
-            >
-              {opt.label}
-            </Tag>
-          ))}
-        </Space>
+        <span style={{ color: 'var(--ds-text-muted)', fontSize: 14, fontWeight: 500 }}>
+          deepseek-ocr
+        </span>
       </div>
 
       <Content
@@ -153,21 +144,21 @@ export default function Chat({ onModelChange }: ChatProps) {
                   maxWidth: '78%',
                   padding: m.role === 'user' ? '12px 16px' : '14px 16px',
                   background:
-                    m.role === 'user'
-                      ? 'var(--ds-user-bubble)'
-                      : 'var(--ds-bg-chat)',
+                    m.role === 'user' ? 'var(--ds-user-bubble)' : 'var(--ds-bg-chat)',
                   borderRadius: 12,
                 }}
               >
-                {m.role === 'user' ? (
-                  <div style={{ whiteSpace: 'pre-wrap', color: 'var(--ds-text)', lineHeight: 1.6 }}>
-                    {m.content}
-                  </div>
-                ) : (
+                {m.role === 'user' && m.imagePreview ? (
+                  <Image
+                    src={m.imagePreview}
+                    alt=""
+                    style={{ maxWidth: 280, maxHeight: 280, borderRadius: 8 }}
+                  />
+                ) : m.role === 'assistant' ? (
                   <div className="markdown-body" style={{ lineHeight: 1.65, color: 'var(--ds-text)' }}>
                     <ReactMarkdown>{m.content}</ReactMarkdown>
                   </div>
-                )}
+                ) : null}
               </div>
             </div>
           ))}
@@ -187,18 +178,12 @@ export default function Chat({ onModelChange }: ChatProps) {
                 }}
               >
                 <Spin size="small" />
-                <span>思考中...</span>
+                <span>识别中...</span>
               </div>
             </div>
           )}
           {thinking && (
-            <div
-              style={{
-                display: 'flex',
-                justifyContent: 'flex-start',
-                marginBottom: 12,
-              }}
-            >
+            <div style={{ display: 'flex', justifyContent: 'flex-start', marginBottom: 12 }}>
               <div
                 style={{
                   maxWidth: '78%',
@@ -243,53 +228,49 @@ export default function Chat({ onModelChange }: ChatProps) {
           style={{
             padding: '16px 24px 24px',
             background: 'transparent',
+            flexShrink: 0,
           }}
         >
+          <input
+            ref={fileInputRef}
+            type="file"
+            accept="image/*"
+            onChange={handleFileChange}
+            style={{ display: 'none' }}
+          />
           <div
+            role="button"
+            tabIndex={0}
+            onClick={() => !loading && fileInputRef.current?.click()}
+            onKeyDown={(e) => {
+              if ((e.key === 'Enter' || e.key === ' ') && !loading) {
+                e.preventDefault()
+                fileInputRef.current?.click()
+              }
+            }}
             style={{
               borderRadius: 12,
               padding: '12px 14px',
               background: 'var(--ds-bg)',
               border: 'none',
               boxShadow: 'none',
+              minHeight: 116,
+              display: 'flex',
+              flexDirection: 'column',
+              alignItems: 'center',
+              justifyContent: 'center',
+              gap: 8,
+              cursor: loading ? 'not-allowed' : 'pointer',
+              opacity: loading ? 0.6 : 1,
+              transition: 'background 0.2s',
             }}
+            className="ocr-upload-zone"
+            title="点击上传图片，识别图中文字"
           >
-            <TextArea
-              value={message}
-              onChange={(e) => setMessage(e.target.value)}
-              onPressEnter={(e) => {
-                if (!e.shiftKey) {
-                  e.preventDefault()
-                  handleSend()
-                }
-              }}
-              placeholder={`给 ${model} 发送消息`}
-              autoSize={{ minRows: 2, maxRows: 6 }}
-              bordered={false}
-              style={{
-                background: 'transparent',
-                resize: 'none',
-                color: 'var(--ds-text)',
-              }}
-              disabled={loading}
-            />
-            <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: 10 }}>
-              <Button
-                type="primary"
-                icon={<SendOutlined />}
-                loading={loading}
-                onClick={handleSend}
-                className="chat-send-btn"
-                style={{
-                  background: 'var(--ds-primary)',
-                  borderColor: 'var(--ds-primary)',
-                  fontWeight: 500,
-                  minWidth: 88,
-                }}
-              >
-                发送
-              </Button>
-            </div>
+            <PictureOutlined style={{ fontSize: 28, color: 'var(--ds-primary)' }} />
+            <span style={{ fontSize: 14, color: 'var(--ds-text-muted)' }}>
+              点击上传图片，识别图中文字 · 支持 JPG、PNG
+            </span>
           </div>
         </div>
       </Content>

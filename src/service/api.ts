@@ -45,7 +45,7 @@ export async function chat(prompt: string, opts: ChatOptions = {}): Promise<void
   const messages = [...history, lastUserMessage]
 
   await streamRequest(
-    '/ai/ollama/chat',
+    '/ai/chat',
     {
       messages,
       model,
@@ -55,4 +55,26 @@ export async function chat(prompt: string, opts: ChatOptions = {}): Promise<void
     },
     { onChunk, onError }
   )
+}
+
+/**
+ * OCR 识别接口（固定 OCR 模型，只收图）
+ * POST /ai/orc 请求体：{ images: ["<base64>"] 或 image: "<base64>", stream: true, options: {} }
+ */
+export async function ocr(opts: {
+  images: string[]
+  onChunk?: (chunk: StreamChunk) => void
+  onError?: (error: Error) => void
+}): Promise<void> {
+  const { images, onChunk, onError } = opts
+  const body: Record<string, unknown> = {
+    stream: true,
+    options: {},
+  }
+  if (images.length === 1) {
+    body.image = images[0]
+  } else {
+    body.images = images
+  }
+  await streamRequest('/ai/orc', body, { onChunk, onError })
 }

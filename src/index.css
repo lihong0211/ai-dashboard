@@ -27,12 +27,18 @@ body {
   background: var(--ds-bg);
 }
 
+@keyframes stt-pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.4; }
+}
+
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after { animation-duration: 0.01ms !important; animation-iteration-count: 1 !important; transition-duration: 0.01ms !important; }
 }
 
 #root {
-  min-height: 100vh;
+  height: 100vh;
+  overflow: hidden;
 }
 
 /* Markdown 渲染样式 */
@@ -92,6 +98,31 @@ a,
   background: var(--ds-primary-hover) !important;
   border-color: var(--ds-primary-hover) !important;
   opacity: 0.95;
+}
+
+/* Chat: 消息区滚动条细且不占位 */
+.chat-messages {
+  scrollbar-width: thin;
+  scrollbar-color: var(--ds-border) transparent;
+}
+.chat-messages::-webkit-scrollbar {
+  width: 6px;
+}
+.chat-messages::-webkit-scrollbar-track {
+  background: transparent;
+}
+.chat-messages::-webkit-scrollbar-thumb {
+  background: var(--ds-border);
+  border-radius: 3px;
+}
+.chat-messages::-webkit-scrollbar-thumb:hover {
+  background: var(--ds-text-muted);
+}
+
+/* OCR: 上传区域 hover */
+.ocr-upload-zone:hover:not([style*="cursor: not-allowed"]) {
+  border-color: var(--ds-primary) !important;
+  background: rgba(59, 130, 246, 0.04) !important;
 }
 
 /* Chat: 输入区无边框 */
